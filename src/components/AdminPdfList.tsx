@@ -14,6 +14,7 @@ interface PdfItem {
 export default function AdminPdfList() {
   const [pdfs, setPdfs] = useState<PdfItem[]>([])
   const [loading, setLoading] = useState(true)
+  const [viewing, setViewing] = useState<string | null>(null)
 
   useEffect(() => {
     fetch('/api/admin/pdfs')
@@ -21,6 +22,19 @@ export default function AdminPdfList() {
       .then((data) => { setPdfs(data); setLoading(false) })
       .catch(() => setLoading(false))
   }, [])
+
+  async function handleView(pdfId: string) {
+    setViewing(pdfId)
+    try {
+      const res = await fetch(`/api/admin/pdfs/${pdfId}/view`, { method: 'POST' })
+      const data = await res.json()
+      if (res.ok) {
+        window.open(`/view/${data.viewToken}`, '_blank')
+      }
+    } finally {
+      setViewing(null)
+    }
+  }
 
   if (loading) return <p className="text-gray-500 text-sm">Loading…</p>
   if (pdfs.length === 0) return <p className="text-gray-500 text-sm">No PDFs uploaded yet.</p>
@@ -53,12 +67,21 @@ export default function AdminPdfList() {
                 {pdf.activeShareCount} user{pdf.activeShareCount !== 1 ? 's' : ''}
               </td>
               <td className="py-3">
-                <a
-                  href={`/admin/pdfs/${pdf.id}`}
-                  className="text-blue-400 hover:text-blue-300 text-xs font-medium transition-colors"
-                >
-                  Manage
-                </a>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => handleView(pdf.id)}
+                    disabled={viewing === pdf.id}
+                    className="text-gray-400 hover:text-white text-xs font-medium transition-colors disabled:opacity-50"
+                  >
+                    {viewing === pdf.id ? 'Opening…' : 'View'}
+                  </button>
+                  <a
+                    href={`/admin/pdfs/${pdf.id}`}
+                    className="text-blue-400 hover:text-blue-300 text-xs font-medium transition-colors"
+                  >
+                    Manage
+                  </a>
+                </div>
               </td>
             </tr>
           ))}

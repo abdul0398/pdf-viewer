@@ -20,7 +20,7 @@ export async function GET(_request: NextRequest) {
     include: {
       uploader: { select: { name: true, email: true } },
       shares: {
-        where: { revokedAt: null },
+        where: { revokedAt: null, user: { role: 'USER' } },
         select: { id: true },
       },
     },
