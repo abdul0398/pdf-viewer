@@ -4,6 +4,7 @@ import UploadForm from '@/components/UploadForm'
 import AdminPdfList from '@/components/AdminPdfList'
 import UserPdfList from '@/components/UserPdfList'
 import SignOutButton from '@/components/SignOutButton'
+import { prisma } from '@/lib/prisma'
 
 export default async function DashboardPage() {
   const session = await auth()
@@ -13,6 +14,10 @@ export default async function DashboardPage() {
   }
 
   const isAdmin = session.user.role === 'ADMIN'
+
+  const pendingDeviceCount = isAdmin
+    ? await prisma.deviceSession.count({ where: { status: 'PENDING' } })
+    : 0
 
   return (
     <main className="min-h-screen bg-gray-950 text-white">
@@ -25,12 +30,25 @@ export default async function DashboardPage() {
           </div>
           <div className="flex items-center gap-4">
             {isAdmin && (
-              <a
-                href="/admin/users"
-                className="text-xs text-gray-400 hover:text-white transition-colors"
-              >
-                Manage Users
-              </a>
+              <>
+                <a
+                  href="/admin/users"
+                  className="text-xs text-gray-400 hover:text-white transition-colors"
+                >
+                  Manage Users
+                </a>
+                <a
+                  href="/admin/devices"
+                  className="text-xs text-gray-400 hover:text-white transition-colors flex items-center gap-1.5"
+                >
+                  Device Approvals
+                  {pendingDeviceCount > 0 && (
+                    <span className="bg-yellow-500 text-gray-900 text-xs font-bold px-1.5 py-0.5 rounded-full leading-none">
+                      {pendingDeviceCount}
+                    </span>
+                  )}
+                </a>
+              </>
             )}
             <span className="text-xs text-gray-500">{session.user.email}</span>
             <SignOutButton />

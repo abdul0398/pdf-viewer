@@ -8,14 +8,15 @@ datasource db {
 }
 
 model User {
-  id           String      @id @default(cuid())
-  email        String      @unique
-  name         String
-  passwordHash String
-  role         Role        @default(USER)
-  createdAt    DateTime    @default(now())
-  uploads      PdfUpload[]
-  shares       PdfShare[]
+  id             String          @id @default(cuid())
+  email          String          @unique
+  name           String
+  passwordHash   String
+  role           Role            @default(USER)
+  createdAt      DateTime        @default(now())
+  uploads        PdfUpload[]
+  shares         PdfShare[]
+  deviceSessions DeviceSession[]
 }
 
 model PdfUpload {
@@ -53,4 +54,29 @@ model ViewSession {
 enum Role {
   ADMIN
   USER
+}
+
+enum DeviceStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  REVOKED
+}
+
+model DeviceSession {
+  id          String       @id @default(cuid())
+  userId      String
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deviceId    String
+  deviceName  String
+  userAgent   String
+  status      DeviceStatus @default(PENDING)
+  requestedAt DateTime     @default(now())
+  approvedAt  DateTime?
+  rejectedAt  DateTime?
+  revokedAt   DateTime?
+  lastLoginAt DateTime?
+
+  @@unique([userId, deviceId])
+  @@index([userId, status])
 }
