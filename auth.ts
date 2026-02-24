@@ -8,6 +8,44 @@ import { parseDeviceName } from '@/lib/device-name'
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   ...authConfig,
+  callbacks: {
+    async jwt({ token, user }) {
+      if (user) {
+        // Initial sign-in: persist user fields into token
+        token.id = user.id
+        token.role = (user as { role: string }).role
+        token.deviceId = (user as { deviceId?: string }).deviceId
+        return token
+      }
+
+      // On every subsequent auth() call, verify device is still APPROVED
+      if (token.deviceId && token.role !== 'ADMIN') {
+        const device = await prisma.deviceSession.findUnique({
+          where: {
+            userId_deviceId: {
+              userId: token.id as string,
+              deviceId: token.deviceId as string,
+            },
+          },
+          select: { status: true },
+        })
+        if (!device || device.status !== 'APPROVED') {
+          // Returning null invalidates the JWT → session becomes null → redirect to login
+          return null
+        }
+      }
+
+      return token
+    },
+    session({ session, token }) {
+      if (session.user) {
+        session.user.id = token.id as string
+        session.user.role = token.role as string
+        session.user.deviceId = token.deviceId as string | undefined
+      }
+      return session
+    },
+  },
   providers: [
     Credentials({
       name: 'credentials',
