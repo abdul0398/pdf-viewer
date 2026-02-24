@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #030712;
+  --foreground: #f9fafb;
 }
 
 @theme inline {
@@ -12,15 +12,31 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+}
+
+/* ── Security: hide everything when printing ──────────────────────────────── */
+@media print {
+  html,
+  body,
+  * {
+    display: none !important;
+    visibility: hidden !important;
+  }
+}
+
+/* ── Prevent text selection globally in the viewer ───────────────────────── */
+.secure-viewer,
+.secure-viewer * {
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  -webkit-touch-callout: none !important;
+}
+
+/* ── Remove default canvas cursor that hints at interactivity ────────────── */
+canvas {
+  pointer-events: none;
 }

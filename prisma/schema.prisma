@@ -1,0 +1,56 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String      @id @default(cuid())
+  email        String      @unique
+  name         String
+  passwordHash String
+  role         Role        @default(USER)
+  createdAt    DateTime    @default(now())
+  uploads      PdfUpload[]
+  shares       PdfShare[]
+}
+
+model PdfUpload {
+  id           String     @id @default(cuid())
+  blobUrl      String
+  originalName String
+  fileSize     Int        @default(0)
+  createdAt    DateTime   @default(now())
+  uploadedBy   String
+  uploader     User       @relation(fields: [uploadedBy], references: [id])
+  shares       PdfShare[]
+}
+
+model PdfShare {
+  id        String        @id @default(cuid())
+  uploadId  String
+  upload    PdfUpload     @relation(fields: [uploadId], references: [id])
+  userId    String
+  user      User          @relation(fields: [userId], references: [id])
+  sharedAt  DateTime      @default(now())
+  revokedAt DateTime?
+  sessions  ViewSession[]
+
+  @@unique([uploadId, userId])
+}
+
+model ViewSession {
+  id        String   @id @default(cuid())
+  viewToken String   @unique @default(cuid())
+  shareId   String
+  share     PdfShare @relation(fields: [shareId], references: [id])
+  expiresAt DateTime
+}
+
+enum Role {
+  ADMIN
+  USER
+}
