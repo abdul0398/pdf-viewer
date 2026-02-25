@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Document, Page, pdfjs } from 'react-pdf'
 
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`
@@ -12,8 +12,6 @@ interface Props {
 
 type Status = 'loading' | 'expired' | 'error' | 'ready'
 
-// How many watermark rows to tile across the page
-const WM_ROWS = 12
 
 export default function SecurePDFViewer({ viewToken, serverFileName }: Props) {
   const [status, setStatus]         = useState<Status>('loading')
@@ -23,11 +21,6 @@ export default function SecurePDFViewer({ viewToken, serverFileName }: Props) {
   const [scale, setScale]           = useState(1.2)
   const [fileName, setFileName]     = useState(serverFileName)
   const [isCapturing, setIsCapturing] = useState(false)
-
-  // Session watermark: time + partial token, stamped once, embedded in every row
-  const wm = useRef(
-    `${new Date().toLocaleString()} · SESSION ${viewToken.slice(0, 8).toUpperCase()}`
-  )
 
   // ── PDF load ───────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -199,53 +192,6 @@ export default function SecurePDFViewer({ viewToken, serverFileName }: Props) {
                 renderAnnotationLayer={false}
               />
 
-              {/*
-                ── Watermark grid ────────────────────────────────────────────
-                Rendered as a fixed pixel-spaced grid (not %) so coverage is
-                consistent regardless of PDF height or zoom level.
-
-                Opacity is high enough to survive any screenshot and remains
-                traceable: every row contains the exact session time and a
-                token fragment so a leaked screenshot identifies the recipient.
-              */}
-              <div
-                aria-hidden="true"
-                className="absolute inset-0 pointer-events-none overflow-hidden"
-                style={{ zIndex: 10 }}
-              >
-                {Array.from({ length: WM_ROWS }).map((_, i) => (
-                  <div
-                    key={i}
-                    className="absolute left-1/2 whitespace-nowrap text-center"
-                    style={{
-                      top:       `${(i / (WM_ROWS - 1)) * 110 - 5}%`,
-                      transform: 'translateX(-50%) rotate(-35deg)',
-                      width:     '160%',
-                    }}
-                  >
-                    {/* Primary watermark line */}
-                    <div
-                      className="font-black tracking-[0.3em] select-none"
-                      style={{
-                        fontSize:  `${scale * 26}px`,
-                        color:     'rgba(0,0,0,0.18)',
-                      }}
-                    >
-                      CONFIDENTIAL · DO NOT COPY
-                    </div>
-                    {/* Session identity line — makes every screenshot traceable */}
-                    <div
-                      className="font-mono tracking-[0.18em] select-none mt-1"
-                      style={{
-                        fontSize: `${scale * 9}px`,
-                        color:    'rgba(0,0,0,0.14)',
-                      }}
-                    >
-                      {wm.current}
-                    </div>
-                  </div>
-                ))}
-              </div>
             </div>
           </Document>
         </div>
