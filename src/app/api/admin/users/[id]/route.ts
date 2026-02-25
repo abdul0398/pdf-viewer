@@ -22,7 +22,20 @@ export async function DELETE(
     return NextResponse.json({ error: 'Cannot delete admin accounts' }, { status: 400 })
   }
 
-  await prisma.user.delete({ where: { id } })
+  await prisma.$transaction([
+    // ViewSessions on shares directly owned by this user
+    prisma.viewSession.deleteMany({ where: { share: { userId: id } } }),
+    // ViewSessions on shares belonging to uploads by this user
+    prisma.viewSession.deleteMany({ where: { share: { upload: { uploadedBy: id } } } }),
+    // Shares directly owned by this user
+    prisma.pdfShare.deleteMany({ where: { userId: id } }),
+    // Shares on uploads by this user
+    prisma.pdfShare.deleteMany({ where: { upload: { uploadedBy: id } } }),
+    // Uploads by this user
+    prisma.pdfUpload.deleteMany({ where: { uploadedBy: id } }),
+    // User (DeviceSession cascades automatically)
+    prisma.user.delete({ where: { id } }),
+  ])
 
   return NextResponse.json({ success: true })
 }
