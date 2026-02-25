@@ -97,43 +97,72 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         })
 
         if (!existing) {
-          // First time seeing this device — register as PENDING
-          await prisma.deviceSession.create({
-            data: {
-              userId: user.id,
-              deviceId,
-              deviceName,
-              userAgent,
-              status: 'PENDING',
-            },
+          // First time seeing this device — auto-approve if under 2, else auto-block
+          const approvedCount = await prisma.deviceSession.count({
+            where: { userId: user.id, status: 'APPROVED' },
           })
-          throw new DevicePendingError()
-        }
 
-        if (existing.status === 'PENDING') {
+          if (approvedCount < 2) {
+            await prisma.deviceSession.create({
+              data: {
+                userId: user.id,
+                deviceId,
+                deviceName,
+                userAgent,
+                status: 'APPROVED',
+                approvedAt: new Date(),
+              },
+            })
+            // Fall through to the APPROVED login below
+          } else {
+            await prisma.deviceSession.create({
+              data: {
+                userId: user.id,
+                deviceId,
+                deviceName,
+                userAgent,
+                status: 'REJECTED',
+                rejectedAt: new Date(),
+              },
+            })
+            throw new DeviceRejectedError()
+          }
+        } else if (existing.status === 'PENDING') {
           throw new DevicePendingError()
-        }
-
-        if (existing.status === 'REJECTED') {
+        } else if (existing.status === 'REJECTED') {
           throw new DeviceRejectedError()
-        }
-
-        if (existing.status === 'REVOKED') {
-          // Re-register as PENDING
-          await prisma.deviceSession.update({
-            where: { id: existing.id },
-            data: {
-              status: 'PENDING',
-              requestedAt: new Date(),
-              revokedAt: null,
-            },
+        } else if (existing.status === 'REVOKED') {
+          // Re-registering a revoked device — apply same auto-approve/block logic
+          const approvedCount = await prisma.deviceSession.count({
+            where: { userId: user.id, status: 'APPROVED' },
           })
-          throw new DevicePendingError()
+
+          if (approvedCount < 2) {
+            await prisma.deviceSession.update({
+              where: { id: existing.id },
+              data: {
+                status: 'APPROVED',
+                approvedAt: new Date(),
+                revokedAt: null,
+              },
+            })
+            // Fall through to the APPROVED login below
+          } else {
+            await prisma.deviceSession.update({
+              where: { id: existing.id },
+              data: {
+                status: 'REJECTED',
+                rejectedAt: new Date(),
+                revokedAt: null,
+              },
+            })
+            throw new DeviceRejectedError()
+          }
         }
 
         // APPROVED — update lastLoginAt and allow login
         await prisma.deviceSession.update({
-          where: { id: existing.id },
+          where: { userId_deviceId: { userId: user.id, deviceId } },
           data: { lastLoginAt: new Date() },
         })
 
