@@ -32,6 +32,15 @@ export async function POST(request: NextRequest) {
     select: { id: true, email: true, name: true, role: true, createdAt: true },
   })
 
+  // Auto-share all existing PDFs with the new user
+  const uploads = await prisma.pdfUpload.findMany({ select: { id: true } })
+  if (uploads.length > 0) {
+    await prisma.pdfShare.createMany({
+      data: uploads.map((u) => ({ uploadId: u.id, userId: user.id })),
+      skipDuplicates: true,
+    })
+  }
+
   return NextResponse.json(user, { status: 201 })
 }
 

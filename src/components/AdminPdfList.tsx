@@ -8,7 +8,6 @@ interface PdfItem {
   fileSize: number
   createdAt: string
   uploader: { name: string; email: string }
-  activeShareCount: number
 }
 
 export default function AdminPdfList() {
@@ -47,7 +46,6 @@ export default function AdminPdfList() {
             <th className="pb-3 pr-6 font-medium">Name</th>
             <th className="pb-3 pr-6 font-medium">Size</th>
             <th className="pb-3 pr-6 font-medium">Uploaded</th>
-            <th className="pb-3 pr-6 font-medium">Shared with</th>
             <th className="pb-3 font-medium"></th>
           </tr>
         </thead>
@@ -63,25 +61,14 @@ export default function AdminPdfList() {
               <td className="py-3 pr-6 text-gray-400 whitespace-nowrap">
                 {new Date(pdf.createdAt).toLocaleDateString()}
               </td>
-              <td className="py-3 pr-6 text-gray-400">
-                {pdf.activeShareCount} user{pdf.activeShareCount !== 1 ? 's' : ''}
-              </td>
               <td className="py-3">
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={() => handleView(pdf.id)}
-                    disabled={viewing === pdf.id}
-                    className="text-gray-400 hover:text-white text-xs font-medium transition-colors disabled:opacity-50"
-                  >
-                    {viewing === pdf.id ? 'Opening…' : 'View'}
-                  </button>
-                  <a
-                    href={`/admin/pdfs/${pdf.id}`}
-                    className="text-blue-400 hover:text-blue-300 text-xs font-medium transition-colors"
-                  >
-                    Manage
-                  </a>
-                </div>
+                <button
+                  onClick={() => handleView(pdf.id)}
+                  disabled={viewing === pdf.id}
+                  className="text-gray-400 hover:text-white text-xs font-medium transition-colors disabled:opacity-50"
+                >
+                  {viewing === pdf.id ? 'Opening…' : 'View'}
+                </button>
               </td>
             </tr>
           ))}

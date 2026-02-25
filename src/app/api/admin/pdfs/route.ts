@@ -19,10 +19,6 @@ export async function GET(_request: NextRequest) {
     orderBy: { createdAt: 'desc' },
     include: {
       uploader: { select: { name: true, email: true } },
-      shares: {
-        where: { revokedAt: null, user: { role: 'USER' } },
-        select: { id: true },
-      },
     },
   })
 
@@ -33,7 +29,6 @@ export async function GET(_request: NextRequest) {
       fileSize: u.fileSize,
       createdAt: u.createdAt,
       uploader: u.uploader,
-      activeShareCount: u.shares.length,
     }))
   )
 }

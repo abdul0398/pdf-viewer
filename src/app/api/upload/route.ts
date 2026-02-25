@@ -47,6 +47,18 @@ export async function POST(request: NextRequest) {
       },
     })
 
+    // Auto-share with all existing non-admin users
+    const users = await prisma.user.findMany({
+      where: { role: 'USER' },
+      select: { id: true },
+    })
+    if (users.length > 0) {
+      await prisma.pdfShare.createMany({
+        data: users.map((u) => ({ uploadId: upload.id, userId: u.id })),
+        skipDuplicates: true,
+      })
+    }
+
     return NextResponse.json({ id: upload.id, originalName: upload.originalName })
   } catch (error) {
     console.error('Upload error:', error)
