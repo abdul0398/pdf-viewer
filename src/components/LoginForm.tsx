@@ -46,7 +46,7 @@ export default function LoginForm() {
         if (code === 'device_pending') {
           setError('Your device is awaiting admin approval.')
         } else if (code === 'device_rejected') {
-          setError('Your device has been rejected by admin.')
+          setError('opps! more than 2 device is logged in!')
         } else {
           setError('Invalid email or password.')
         }
