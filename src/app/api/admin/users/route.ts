@@ -11,13 +11,22 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json()
-  const { email, name, password } = body
+  const { email, name, password, mobile, color } = body
 
   if (!email || !name || !password) {
     return NextResponse.json(
       { error: 'email, name, and password are required' },
       { status: 400 }
     )
+  }
+
+  if (mobile !== undefined && mobile !== null && mobile !== '') {
+    if (!/^[89]\d{7}$/.test(mobile)) {
+      return NextResponse.json(
+        { error: 'Mobile must be a valid 8-digit Singaporean number starting with 8 or 9' },
+        { status: 400 }
+      )
+    }
   }
 
   const existing = await prisma.user.findUnique({ where: { email } })
@@ -28,7 +37,7 @@ export async function POST(request: NextRequest) {
   const passwordHash = await bcrypt.hash(password, 12)
 
   const user = await prisma.user.create({
-    data: { email, name, passwordHash, role: 'USER' },
+    data: { email, name, passwordHash, role: 'USER', mobile: mobile || null, color: color || null },
     select: { id: true, email: true, name: true, role: true, createdAt: true },
   })
 

@@ -13,7 +13,10 @@ model User {
   name           String
   passwordHash   String
   role           Role            @default(USER)
-  createdAt      DateTime        @default(now())
+  mobile          String?
+  color           String?
+  mobileVerified  Boolean         @default(false)
+  createdAt       DateTime        @default(now())
   uploads        PdfUpload[]
   shares         PdfShare[]
   deviceSessions DeviceSession[]

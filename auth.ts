@@ -15,24 +15,38 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token.id = user.id
         token.role = (user as { role: string }).role
         token.deviceId = (user as { deviceId?: string }).deviceId
+        token.mobileVerified = (user as { mobileVerified?: boolean }).mobileVerified ?? false
+        token.color = (user as { color?: string | null }).color ?? null
         return token
       }
 
       // On every subsequent auth() call, verify device is still APPROVED
-      if (token.deviceId && token.role !== 'ADMIN') {
-        const device = await prisma.deviceSession.findUnique({
-          where: {
-            userId_deviceId: {
-              userId: token.id as string,
-              deviceId: token.deviceId as string,
+      // and refresh mobileVerified from DB
+      if (token.role !== 'ADMIN') {
+        if (token.deviceId) {
+          const device = await prisma.deviceSession.findUnique({
+            where: {
+              userId_deviceId: {
+                userId: token.id as string,
+                deviceId: token.deviceId as string,
+              },
             },
-          },
-          select: { status: true },
-        })
-        if (!device || device.status !== 'APPROVED') {
-          // Returning null invalidates the JWT → session becomes null → redirect to login
-          return null
+            select: { status: true },
+          })
+          if (!device || device.status !== 'APPROVED') {
+            // Returning null invalidates the JWT → session becomes null → redirect to login
+            return null
+          }
         }
+
+        // Re-read mobileVerified from DB so it reflects immediately after verification.
+        // Users with no mobile are treated as already verified.
+        const dbUser = await prisma.user.findUnique({
+          where: { id: token.id as string },
+          select: { mobileVerified: true, mobile: true, color: true },
+        })
+        token.mobileVerified = !dbUser?.mobile || dbUser.mobileVerified
+        token.color = dbUser?.color ?? null
       }
 
       return token
@@ -42,6 +56,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         session.user.id = token.id as string
         session.user.role = token.role as string
         session.user.deviceId = token.deviceId as string | undefined
+        session.user.mobileVerified = (token.mobileVerified as boolean | undefined) ?? false
+        session.user.color = token.color as string | null | undefined
       }
       return session
     },
@@ -82,6 +98,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             email: user.email,
             name: user.name,
             role: user.role,
+            mobileVerified: true,
           }
         }
 
@@ -172,6 +189,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           name: user.name,
           role: user.role,
           deviceId,
+          mobileVerified: user.mobileVerified,
+          color: user.color,
         }
       },
     }),

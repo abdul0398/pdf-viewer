@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '../../../../../auth'
 import { prisma } from '@/lib/prisma'
+import { canAccessPdf } from '@/lib/pdf-access'
 
 export const runtime = 'nodejs'
 
@@ -31,6 +32,11 @@ export async function POST(
 
   if (share.revokedAt) {
     return NextResponse.json({ error: 'Access revoked' }, { status: 403 })
+  }
+
+  // Color-based access check: blue users may only view specific PDFs
+  if (!canAccessPdf(userSession.user.color, share.upload.originalName)) {
+    return NextResponse.json({ error: 'access_denied' }, { status: 403 })
   }
 
   // Return existing valid session if one exists
