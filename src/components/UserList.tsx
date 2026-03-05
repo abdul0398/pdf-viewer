@@ -8,12 +8,14 @@ interface UserRecord {
   name: string
   role: string
   mobile: string | null
+  color: string | null
   createdAt: string
 }
 
 export default function UserList({ initialUsers }: { initialUsers: UserRecord[] }) {
   const [users, setUsers] = useState<UserRecord[]>(initialUsers)
   const [deleting, setDeleting] = useState<Record<string, boolean>>({})
+  const [updatingColor, setUpdatingColor] = useState<Record<string, boolean>>({})
 
   async function handleDelete(id: string) {
     if (!confirm('Delete this user? This cannot be undone.')) return
@@ -28,6 +30,22 @@ export default function UserList({ initialUsers }: { initialUsers: UserRecord[] 
     setDeleting((prev) => ({ ...prev, [id]: false }))
   }
 
+  async function handleColorChange(id: string, color: string | null) {
+    setUpdatingColor((prev) => ({ ...prev, [id]: true }))
+
+    const res = await fetch(`/api/admin/users/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ color }),
+    })
+
+    if (res.ok) {
+      setUsers((prev) => prev.map((u) => (u.id === id ? { ...u, color } : u)))
+    }
+
+    setUpdatingColor((prev) => ({ ...prev, [id]: false }))
+  }
+
   return (
     <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
       <table className="w-full text-sm">
@@ -36,6 +54,7 @@ export default function UserList({ initialUsers }: { initialUsers: UserRecord[] 
             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mobile</th>
+            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Color</th>
             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
             <th className="px-4 py-3" />
@@ -47,6 +66,31 @@ export default function UserList({ initialUsers }: { initialUsers: UserRecord[] 
               <td className="px-4 py-3 text-white">{user.name}</td>
               <td className="px-4 py-3 text-gray-300">{user.email}</td>
               <td className="px-4 py-3 text-gray-300">{user.mobile ? `+65 ${user.mobile}` : <span className="text-gray-600">—</span>}</td>
+              <td className="px-4 py-3">
+                <div className={`flex gap-1 ${updatingColor[user.id] ? 'opacity-50 pointer-events-none' : ''}`}>
+                  {(['blue', 'green', null] as const).map((c) => (
+                    <button
+                      key={c ?? 'none'}
+                      type="button"
+                      onClick={() => handleColorChange(user.id, c)}
+                      title={c ?? 'None'}
+                      className={`w-6 h-6 rounded-full border-2 transition-all ${
+                        user.color === c
+                          ? c === 'blue'
+                            ? 'bg-blue-500 border-blue-300'
+                            : c === 'green'
+                            ? 'bg-green-500 border-green-300'
+                            : 'bg-gray-600 border-gray-400'
+                          : c === 'blue'
+                          ? 'bg-blue-500/30 border-blue-500/30 hover:border-blue-400'
+                          : c === 'green'
+                          ? 'bg-green-500/30 border-green-500/30 hover:border-green-400'
+                          : 'bg-gray-700 border-gray-600 hover:border-gray-400'
+                      }`}
+                    />
+                  ))}
+                </div>
+              </td>
               <td className="px-4 py-3">
                 <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
                   user.role === 'ADMIN'

@@ -2,6 +2,32 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '../../../../../../auth'
 import { prisma } from '@/lib/prisma'
 
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const session = await auth()
+  if (!session?.user || session.user.role !== 'ADMIN') {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
+  const { id } = await params
+  const body = await req.json()
+  const { color } = body
+
+  if (color !== null && color !== 'blue' && color !== 'green') {
+    return NextResponse.json({ error: 'Color must be blue, green, or null' }, { status: 400 })
+  }
+
+  const user = await prisma.user.update({
+    where: { id },
+    data: { color: color ?? null },
+    select: { id: true, color: true },
+  })
+
+  return NextResponse.json(user)
+}
+
 export async function DELETE(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
