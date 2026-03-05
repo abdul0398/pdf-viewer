@@ -7,6 +7,7 @@ interface UserRecord {
   email: string
   name: string
   role: string
+  mobile: string | null
   createdAt: string
 }
 
@@ -34,6 +35,7 @@ export default function UserList({ initialUsers }: { initialUsers: UserRecord[] 
           <tr className="border-b border-gray-800">
             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mobile</th>
             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
             <th className="px-4 py-3" />
@@ -44,6 +46,7 @@ export default function UserList({ initialUsers }: { initialUsers: UserRecord[] 
             <tr key={user.id} className="hover:bg-gray-800/50 transition-colors">
               <td className="px-4 py-3 text-white">{user.name}</td>
               <td className="px-4 py-3 text-gray-300">{user.email}</td>
+              <td className="px-4 py-3 text-gray-300">{user.mobile ? `+65 ${user.mobile}` : <span className="text-gray-600">—</span>}</td>
               <td className="px-4 py-3">
                 <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
                   user.role === 'ADMIN'

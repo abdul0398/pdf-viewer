@@ -133,34 +133,28 @@ export default function CreateUserForm() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label htmlFor="user-color" className="block text-sm font-medium text-gray-300 mb-1.5">
+            <label className="block text-sm font-medium text-gray-300 mb-1.5">
               Color <span className="text-gray-500 font-normal">(optional)</span>
             </label>
-            <div className="flex items-center gap-3">
-              <input
-                id="user-color"
-                type="color"
-                value={color || '#6366f1'}
-                onChange={(e) => setColor(e.target.value)}
-                className="w-10 h-10 rounded-lg border border-gray-700 bg-gray-800 cursor-pointer p-0.5"
-              />
-              <input
-                type="text"
-                value={color}
-                onChange={(e) => setColor(e.target.value)}
-                placeholder="#6366f1"
-                maxLength={7}
-                className="w-full bg-gray-800 border border-gray-700 text-white rounded-lg px-4 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors font-mono"
-              />
-              {color && (
+            <div className="flex gap-2">
+              {(['', 'blue', 'green'] as const).map((c) => (
                 <button
+                  key={c || 'none'}
                   type="button"
-                  onClick={() => setColor('')}
-                  className="text-gray-500 hover:text-gray-300 text-xs shrink-0"
+                  onClick={() => setColor(c)}
+                  className={`px-4 py-2.5 rounded-lg text-sm font-medium border transition-colors ${
+                    color === c
+                      ? c === 'blue'
+                        ? 'bg-blue-600 border-blue-500 text-white'
+                        : c === 'green'
+                        ? 'bg-green-600 border-green-500 text-white'
+                        : 'bg-gray-700 border-gray-600 text-white'
+                      : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-500'
+                  }`}
                 >
-                  Clear
+                  {c || 'None'}
                 </button>
-              )}
+              ))}
             </div>
           </div>
         </div>
