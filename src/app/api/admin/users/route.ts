@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '../../../../../auth'
 import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
+import { sendWelcomeEmail } from '@/lib/email'
 
 export async function POST(request: NextRequest) {
   const session = await auth()
@@ -49,6 +50,9 @@ export async function POST(request: NextRequest) {
       skipDuplicates: true,
     })
   }
+
+  // Send welcome email (non-blocking — failure won't break user creation)
+  sendWelcomeEmail({ to: email, name, password }).catch(() => {})
 
   return NextResponse.json(user, { status: 201 })
 }
