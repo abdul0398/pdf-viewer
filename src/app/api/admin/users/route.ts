@@ -58,14 +58,18 @@ export async function POST(request: NextRequest) {
     })
   }
 
-  // Send welcome email only if admin opted in (non-blocking)
+  // Send welcome email only if admin opted in
+  let emailError: string | null = null
   if (sendEmail) {
-    sendWelcomeEmail({ to: email, name, password }).catch((err) => {
+    try {
+      await sendWelcomeEmail({ to: email, name, password })
+    } catch (err) {
       console.error('[email] Failed to send welcome email:', err)
-    })
+      emailError = err instanceof Error ? err.message : 'Unknown email error'
+    }
   }
 
-  return NextResponse.json(user, { status: 201 })
+  return NextResponse.json({ ...user, emailError }, { status: 201 })
 }
 
 export async function GET() {

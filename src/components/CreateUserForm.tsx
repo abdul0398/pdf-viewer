@@ -43,7 +43,7 @@ export default function CreateUserForm() {
         return
       }
 
-      setSuccess(`User ${data.email} created successfully`)
+      setSuccess(`User ${data.email} created successfully${data.emailError ? ` (email failed: ${data.emailError})` : ''}`)
       setName('')
       setEmail('')
       setPassword('')
