@@ -35,6 +35,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Email already in use' }, { status: 409 })
   }
 
+  if (mobile) {
+    const mobileExists = await prisma.user.findFirst({ where: { mobile } })
+    if (mobileExists) {
+      return NextResponse.json({ error: 'Mobile number already in use' }, { status: 409 })
+    }
+  }
+
   const passwordHash = await bcrypt.hash(password, 12)
 
   const user = await prisma.user.create({
@@ -53,7 +60,9 @@ export async function POST(request: NextRequest) {
 
   // Send welcome email only if admin opted in (non-blocking)
   if (sendEmail) {
-    sendWelcomeEmail({ to: email, name, password }).catch(() => {})
+    sendWelcomeEmail({ to: email, name, password }).catch((err) => {
+      console.error('[email] Failed to send welcome email:', err)
+    })
   }
 
   return NextResponse.json(user, { status: 201 })

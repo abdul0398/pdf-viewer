@@ -14,7 +14,7 @@ export async function PATCH(
 
   const { id } = await params
   const body = await req.json()
-  const { color, informUser, active } = body
+  const { color, informUser, active, name, email, mobile } = body
 
   // Toggle active status
   if (typeof active === 'boolean') {
@@ -30,17 +30,38 @@ export async function PATCH(
     return NextResponse.json({ error: 'Color must be white, green, or null' }, { status: 400 })
   }
 
+  if (mobile !== undefined && mobile !== null && mobile !== '') {
+    if (!/^[89]\d{7}$/.test(mobile)) {
+      return NextResponse.json({ error: 'Mobile must be 8 digits starting with 8 or 9' }, { status: 400 })
+    }
+  }
+
+  if (email) {
+    const conflict = await prisma.user.findFirst({ where: { email, NOT: { id } } })
+    if (conflict) return NextResponse.json({ error: 'Email already in use' }, { status: 409 })
+  }
+
+  if (mobile) {
+    const conflict = await prisma.user.findFirst({ where: { mobile, NOT: { id } } })
+    if (conflict) return NextResponse.json({ error: 'Mobile number already in use' }, { status: 409 })
+  }
+
   const user = await prisma.user.update({
     where: { id },
-    data: { color: color ?? null },
-    select: { id: true, color: true, email: true },
+    data: {
+      color: color ?? null,
+      ...(name  ? { name }                    : {}),
+      ...(email ? { email }                   : {}),
+      mobile: mobile || null,
+    },
+    select: { id: true, color: true, name: true, email: true, mobile: true },
   })
 
   if (informUser) {
     sendNotesUploadedEmail({ to: user.email }).catch(() => {})
   }
 
-  return NextResponse.json({ id: user.id, color: user.color })
+  return NextResponse.json(user)
 }
 
 export async function DELETE(

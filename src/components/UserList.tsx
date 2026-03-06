@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 
 interface UserRecord {
   id: string
@@ -18,6 +18,9 @@ interface UserRecord {
 interface EditModal {
   userId: string
   currentColor: string | null
+  currentName: string
+  currentEmail: string
+  currentMobile: string | null
 }
 
 type StatusFilter = 'all' | 'active' | 'inactive'
@@ -34,6 +37,11 @@ function ColorBadge({ color }: { color: string | null }) {
 
 export default function UserList({ initialUsers }: { initialUsers: UserRecord[] }) {
   const [users, setUsers] = useState<UserRecord[]>(initialUsers)
+
+  // Sync when server refreshes with new data (e.g. after creating a user)
+  useEffect(() => {
+    setUsers(initialUsers)
+  }, [initialUsers])
   const [deleting, setDeleting] = useState<Record<string, boolean>>({})
   const [togglingActive, setTogglingActive] = useState<Record<string, boolean>>({})
 
@@ -42,11 +50,16 @@ export default function UserList({ initialUsers }: { initialUsers: UserRecord[] 
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
 
-  // Edit color modal
+  // Edit modal
   const [editModal, setEditModal] = useState<EditModal | null>(null)
+  const [pendingName, setPendingName] = useState('')
+  const [pendingEmail, setPendingEmail] = useState('')
+  const [pendingMobile, setPendingMobile] = useState('')
+  const [mobileError, setMobileError] = useState<string | null>(null)
   const [pendingColor, setPendingColor] = useState<string | null>(null)
   const [informUser, setInformUser] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
 
   const filtered = useMemo(() => {
     return users.filter((u) => {
@@ -80,30 +93,58 @@ export default function UserList({ initialUsers }: { initialUsers: UserRecord[] 
   }
 
   function openEdit(user: UserRecord) {
-    setEditModal({ userId: user.id, currentColor: user.color })
+    setEditModal({ userId: user.id, currentColor: user.color, currentName: user.name, currentEmail: user.email, currentMobile: user.mobile })
+    setPendingName(user.name)
+    setPendingEmail(user.email)
+    setPendingMobile(user.mobile ?? '')
     setPendingColor(user.color)
     setInformUser(false)
+    setSaveError(null)
+    setMobileError(null)
   }
 
   function closeEdit() {
     setEditModal(null)
+    setSaveError(null)
+    setMobileError(null)
   }
 
-  async function handleSaveColor() {
+  async function handleSave() {
     if (!editModal) return
+
+    if (pendingMobile && !/^[89]\d{7}$/.test(pendingMobile)) {
+      setMobileError('Must be 8 digits starting with 8 or 9')
+      return
+    }
+
     setSaving(true)
+    setSaveError(null)
 
     const res = await fetch(`/api/admin/users/${editModal.userId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ color: pendingColor, informUser }),
+      body: JSON.stringify({
+        name: pendingName,
+        email: pendingEmail,
+        mobile: pendingMobile || null,
+        color: pendingColor,
+        informUser,
+      }),
     })
+
+    const data = await res.json()
 
     if (res.ok) {
       setUsers((prev) =>
-        prev.map((u) => (u.id === editModal.userId ? { ...u, color: pendingColor } : u))
+        prev.map((u) =>
+          u.id === editModal.userId
+            ? { ...u, name: data.name, email: data.email, mobile: data.mobile, color: data.color }
+            : u
+        )
       )
       closeEdit()
+    } else {
+      setSaveError(data.error || 'Failed to save')
     }
 
     setSaving(false)
@@ -331,7 +372,50 @@ export default function UserList({ initialUsers }: { initialUsers: UserRecord[] 
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={closeEdit} />
           <div className="relative bg-gray-900 border border-gray-700 rounded-2xl p-6 w-full max-w-sm shadow-2xl">
-            <h3 className="text-base font-semibold text-white mb-5">Edit User Color</h3>
+            <h3 className="text-base font-semibold text-white mb-5">Edit User</h3>
+
+            {/* Name */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-300 mb-1.5">Name</label>
+              <input
+                type="text"
+                value={pendingName}
+                onChange={(e) => setPendingName(e.target.value)}
+                className="w-full bg-gray-800 border border-gray-700 text-white rounded-lg px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+              />
+            </div>
+
+            {/* Email */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-300 mb-1.5">Email</label>
+              <input
+                type="email"
+                value={pendingEmail}
+                onChange={(e) => setPendingEmail(e.target.value)}
+                className="w-full bg-gray-800 border border-gray-700 text-white rounded-lg px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+              />
+            </div>
+
+            {/* Mobile */}
+            <div className="mb-5">
+              <label className="block text-sm font-medium text-gray-300 mb-1.5">Mobile</label>
+              <div className="flex">
+                <span className="inline-flex items-center px-3 bg-gray-700 border border-r-0 border-gray-600 rounded-l-lg text-gray-400 text-sm select-none">+65</span>
+                <input
+                  type="tel"
+                  value={pendingMobile}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, '').slice(0, 8)
+                    setPendingMobile(val)
+                    setMobileError(null)
+                  }}
+                  maxLength={8}
+                  placeholder="8 or 9XXXXXXX"
+                  className={`w-full bg-gray-800 border text-white rounded-r-lg px-3 py-2.5 text-sm outline-none focus:ring-1 transition-colors ${mobileError ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-gray-700 focus:border-blue-500 focus:ring-blue-500'}`}
+                />
+              </div>
+              {mobileError && <p className="text-red-400 text-xs mt-1">{mobileError}</p>}
+            </div>
 
             <div className="mb-5">
               <label className="block text-sm font-medium text-gray-300 mb-1.5">Color</label>
@@ -365,6 +449,12 @@ export default function UserList({ initialUsers }: { initialUsers: UserRecord[] 
               )}
             </div>
 
+            {saveError && (
+              <div className="mb-4 text-xs text-red-400 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2">
+                {saveError}
+              </div>
+            )}
+
             <div className="flex gap-3">
               <button
                 onClick={closeEdit}
@@ -373,7 +463,7 @@ export default function UserList({ initialUsers }: { initialUsers: UserRecord[] 
                 Cancel
               </button>
               <button
-                onClick={handleSaveColor}
+                onClick={handleSave}
                 disabled={saving}
                 className="flex-1 px-4 py-2 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-500 disabled:opacity-60 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
               >
