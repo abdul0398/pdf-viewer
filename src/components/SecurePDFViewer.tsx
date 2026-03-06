@@ -21,12 +21,10 @@ export default function SecurePDFViewer({ viewToken, serverFileName }: Props) {
   const [fileName]                    = useState(serverFileName)
   const [isCapturing, setIsCapturing] = useState(false)
 
-  // One ref per page div — used for scrolling and IntersectionObserver
+  // One ref per page div — used for scrolling and page tracking
   const pageRefs = useRef<(HTMLDivElement | null)[]>([])
-  // Scroll container ref — observer root
+  // Scroll container ref
   const scrollRef = useRef<HTMLElement | null>(null)
-  // Visibility ratio per page index
-  const visibilityRef = useRef<number[]>([])
 
   // ── PDF load ───────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -51,34 +49,31 @@ export default function SecurePDFViewer({ viewToken, serverFileName }: Props) {
     return () => { if (objectUrl) URL.revokeObjectURL(objectUrl) }
   }, [viewToken])
 
-  // ── IntersectionObserver — track which page is most visible ───────────────
+  // ── Scroll listener — track which page is closest to container centre ──────
   useEffect(() => {
-    if (!numPages || !scrollRef.current) return
+    const container = scrollRef.current
+    if (!container || !numPages) return
 
-    visibilityRef.current = new Array(numPages).fill(0)
+    const handleScroll = () => {
+      const centre = container.scrollTop + container.clientHeight / 2
+      let closestIdx = 0
+      let closestDist = Infinity
 
-    const observers: IntersectionObserver[] = []
-    const thresholds = Array.from({ length: 21 }, (_, i) => i / 20)
+      pageRefs.current.slice(0, numPages).forEach((el, idx) => {
+        if (!el) return
+        const elCentre = el.offsetTop + el.offsetHeight / 2
+        const dist = Math.abs(elCentre - centre)
+        if (dist < closestDist) {
+          closestDist = dist
+          closestIdx = idx
+        }
+      })
 
-    pageRefs.current.slice(0, numPages).forEach((el, idx) => {
-      if (!el) return
+      setPageNumber(closestIdx + 1)
+    }
 
-      const obs = new IntersectionObserver(
-        ([entry]) => {
-          visibilityRef.current[idx] = entry.intersectionRatio
-          // Find the page with the highest visibility
-          let best = 0
-          visibilityRef.current.forEach((r, i) => { if (r > visibilityRef.current[best]) best = i })
-          setPageNumber(best + 1)
-        },
-        { root: scrollRef.current, threshold: thresholds }
-      )
-
-      obs.observe(el)
-      observers.push(obs)
-    })
-
-    return () => observers.forEach((o) => o.disconnect())
+    container.addEventListener('scroll', handleScroll, { passive: true })
+    return () => container.removeEventListener('scroll', handleScroll)
   }, [numPages])
 
   // ── Screen-capture detection ───────────────────────────────────────────────
@@ -232,7 +227,6 @@ export default function SecurePDFViewer({ viewToken, serverFileName }: Props) {
           file={pdfUrl!}
           onLoadSuccess={({ numPages: n }) => {
             pageRefs.current = new Array(n).fill(null)
-            visibilityRef.current = new Array(n).fill(0)
             setNumPages(n)
           }}
           loading={null}
