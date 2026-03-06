@@ -23,8 +23,6 @@ export default function SecurePDFViewer({ viewToken, serverFileName }: Props) {
 
   // One ref per page div — used for scrolling and page tracking
   const pageRefs = useRef<(HTMLDivElement | null)[]>([])
-  // Scroll container ref
-  const scrollRef = useRef<HTMLElement | null>(null)
 
   // ── PDF load ───────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -49,36 +47,32 @@ export default function SecurePDFViewer({ viewToken, serverFileName }: Props) {
     return () => { if (objectUrl) URL.revokeObjectURL(objectUrl) }
   }, [viewToken])
 
-  // ── Scroll listener — track which page is closest to container centre ──────
+  // ── IntersectionObserver — track most visible page in the viewport ─────────
   useEffect(() => {
-    const container = scrollRef.current
-    if (!container || !numPages) return
+    if (!numPages) return
 
-    const handleScroll = () => {
-      const containerRect = container.getBoundingClientRect()
-      const centre = containerRect.top + containerRect.height / 2
-      let closestIdx = 0
-      let closestDist = Infinity
+    const visibilities = new Array(numPages).fill(0)
+    const observers: IntersectionObserver[] = []
+    const thresholds = Array.from({ length: 21 }, (_, i) => i / 20)
 
-      pageRefs.current.slice(0, numPages).forEach((el, idx) => {
-        if (!el) return
-        const rect = el.getBoundingClientRect()
-        const elCentre = rect.top + rect.height / 2
-        const dist = Math.abs(elCentre - centre)
-        if (dist < closestDist) {
-          closestDist = dist
-          closestIdx = idx
-        }
-      })
+    pageRefs.current.slice(0, numPages).forEach((el, idx) => {
+      if (!el) return
+      const obs = new IntersectionObserver(
+        ([entry]) => {
+          visibilities[idx] = entry.intersectionRatio
+          const best = visibilities.reduce(
+            (bestIdx, v, i) => (v > visibilities[bestIdx] ? i : bestIdx),
+            0
+          )
+          setPageNumber(best + 1)
+        },
+        { threshold: thresholds }   // root: null → viewport (reliable)
+      )
+      obs.observe(el)
+      observers.push(obs)
+    })
 
-      setPageNumber(closestIdx + 1)
-    }
-
-    // Fire once immediately so counter is correct on load
-    handleScroll()
-
-    container.addEventListener('scroll', handleScroll, { passive: true })
-    return () => container.removeEventListener('scroll', handleScroll)
+    return () => observers.forEach((o) => o.disconnect())
   }, [numPages])
 
   // ── Screen-capture detection ───────────────────────────────────────────────
@@ -224,7 +218,6 @@ export default function SecurePDFViewer({ viewToken, serverFileName }: Props) {
 
       {/* Scrollable page area */}
       <main
-        ref={scrollRef}
         className="flex-1 overflow-auto py-8 px-4"
         style={{ filter: isCapturing ? 'blur(20px) brightness(0.2)' : 'none' }}
       >
