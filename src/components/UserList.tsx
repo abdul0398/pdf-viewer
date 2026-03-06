@@ -9,6 +9,7 @@ interface UserRecord {
   role: string
   mobile: string | null
   color: string | null
+  agentName: string | null
   createdAt: string
 }
 
@@ -54,6 +55,7 @@ export default function UserList({ initialUsers }: { initialUsers: UserRecord[] 
             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mobile</th>
+            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Agent Name</th>
             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Color</th>
             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
@@ -65,7 +67,8 @@ export default function UserList({ initialUsers }: { initialUsers: UserRecord[] 
             <tr key={user.id} className="hover:bg-gray-800/50 transition-colors">
               <td className="px-4 py-3 text-white">{user.name}</td>
               <td className="px-4 py-3 text-gray-300">{user.email}</td>
-              <td className="px-4 py-3 text-gray-300">{user.mobile ? `+65 ${user.mobile}` : <span className="text-gray-600">—</span>}</td>
+              <td className="px-4 py-3 text-gray-300">{user.mobile || <span className="text-gray-600">—</span>}</td>
+              <td className="px-4 py-3 text-gray-300">{user.agentName || <span className="text-gray-600">—</span>}</td>
               <td className="px-4 py-3">
                 <div className={`flex gap-1 ${updatingColor[user.id] ? 'opacity-50 pointer-events-none' : ''}`}>
                   {(['white', 'green', null] as const).map((c) => (
