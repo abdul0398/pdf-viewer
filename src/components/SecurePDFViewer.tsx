@@ -55,13 +55,15 @@ export default function SecurePDFViewer({ viewToken, serverFileName }: Props) {
     if (!container || !numPages) return
 
     const handleScroll = () => {
-      const centre = container.scrollTop + container.clientHeight / 2
+      const containerRect = container.getBoundingClientRect()
+      const centre = containerRect.top + containerRect.height / 2
       let closestIdx = 0
       let closestDist = Infinity
 
       pageRefs.current.slice(0, numPages).forEach((el, idx) => {
         if (!el) return
-        const elCentre = el.offsetTop + el.offsetHeight / 2
+        const rect = el.getBoundingClientRect()
+        const elCentre = rect.top + rect.height / 2
         const dist = Math.abs(elCentre - centre)
         if (dist < closestDist) {
           closestDist = dist
@@ -71,6 +73,9 @@ export default function SecurePDFViewer({ viewToken, serverFileName }: Props) {
 
       setPageNumber(closestIdx + 1)
     }
+
+    // Fire once immediately so counter is correct on load
+    handleScroll()
 
     container.addEventListener('scroll', handleScroll, { passive: true })
     return () => container.removeEventListener('scroll', handleScroll)
