@@ -12,13 +12,17 @@ export default async function AdminUsersPage() {
   }
 
   const users = await prisma.user.findMany({
-    select: { id: true, email: true, name: true, role: true, mobile: true, color: true, agentName: true, createdAt: true },
+    select: {
+      id: true, email: true, name: true, role: true, mobile: true, color: true, agentName: true, createdAt: true,
+      _count: { select: { deviceSessions: { where: { status: 'APPROVED' } } } },
+    },
     orderBy: { createdAt: 'asc' },
   })
 
-  const serializedUsers = users.map((u) => ({
+  const serializedUsers = users.map(({ _count, ...u }) => ({
     ...u,
     createdAt: u.createdAt.toISOString(),
+    devices: _count.deviceSessions,
   }))
 
   return (

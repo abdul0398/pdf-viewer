@@ -10,6 +10,7 @@ interface UserRecord {
   mobile: string | null
   color: string | null
   agentName: string | null
+  devices: number
   createdAt: string
 }
 
@@ -97,6 +98,7 @@ export default function UserList({ initialUsers }: { initialUsers: UserRecord[] 
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mobile</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Agent Name</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Color</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Devices</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
                 <th className="px-4 py-3" />
@@ -111,6 +113,16 @@ export default function UserList({ initialUsers }: { initialUsers: UserRecord[] 
                   <td className="px-4 py-3 text-gray-300">{user.agentName || <span className="text-gray-600">—</span>}</td>
                   <td className="px-4 py-3">
                     <ColorBadge color={user.color} />
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${
+                      user.devices > 0 ? 'bg-blue-500/15 text-blue-400' : 'bg-gray-700 text-gray-500'
+                    }`}>
+                      <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M3 5a2 2 0 012-2h10a2 2 0 012 2v8a2 2 0 01-2 2h-2.22l.123.489.804.804A1 1 0 0113 18H7a1 1 0 01-.707-1.707l.804-.804L7.22 15H5a2 2 0 01-2-2V5zm5.771 7H5V5h10v7H8.771z" clipRule="evenodd" />
+                      </svg>
+                      {user.devices}
+                    </span>
                   </td>
                   <td className="px-4 py-3">
                     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
