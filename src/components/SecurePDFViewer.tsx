@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { Document, Page, pdfjs } from 'react-pdf'
 
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`
@@ -12,15 +12,21 @@ interface Props {
 
 type Status = 'loading' | 'expired' | 'error' | 'ready'
 
-
 export default function SecurePDFViewer({ viewToken, serverFileName }: Props) {
-  const [status, setStatus]         = useState<Status>('loading')
-  const [pdfUrl, setPdfUrl]         = useState<string | null>(null)
-  const [numPages, setNumPages]     = useState(0)
-  const [pageNumber, setPageNumber] = useState(1)
-  const [scale, setScale]           = useState(1.2)
-  const [fileName, setFileName]     = useState(serverFileName)
+  const [status, setStatus]           = useState<Status>('loading')
+  const [pdfUrl, setPdfUrl]           = useState<string | null>(null)
+  const [numPages, setNumPages]       = useState(0)
+  const [pageNumber, setPageNumber]   = useState(1)
+  const [scale, setScale]             = useState(1.2)
+  const [fileName]                    = useState(serverFileName)
   const [isCapturing, setIsCapturing] = useState(false)
+
+  // One ref per page div — used for scrolling and IntersectionObserver
+  const pageRefs = useRef<(HTMLDivElement | null)[]>([])
+  // Scroll container ref — observer root
+  const scrollRef = useRef<HTMLElement | null>(null)
+  // Visibility ratio per page index
+  const visibilityRef = useRef<number[]>([])
 
   // ── PDF load ───────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -45,9 +51,37 @@ export default function SecurePDFViewer({ viewToken, serverFileName }: Props) {
     return () => { if (objectUrl) URL.revokeObjectURL(objectUrl) }
   }, [viewToken])
 
-  // ── Screen-capture detection via getDisplayMedia monkey-patch ─────────────
-  // This is the only browser API that fires when a screen recording starts.
-  // It does NOT fire for OS-level screenshots (Cmd+Shift+3/4/5) — nothing can.
+  // ── IntersectionObserver — track which page is most visible ───────────────
+  useEffect(() => {
+    if (!numPages || !scrollRef.current) return
+
+    visibilityRef.current = new Array(numPages).fill(0)
+
+    const observers: IntersectionObserver[] = []
+    const thresholds = Array.from({ length: 21 }, (_, i) => i / 20)
+
+    pageRefs.current.slice(0, numPages).forEach((el, idx) => {
+      if (!el) return
+
+      const obs = new IntersectionObserver(
+        ([entry]) => {
+          visibilityRef.current[idx] = entry.intersectionRatio
+          // Find the page with the highest visibility
+          let best = 0
+          visibilityRef.current.forEach((r, i) => { if (r > visibilityRef.current[best]) best = i })
+          setPageNumber(best + 1)
+        },
+        { root: scrollRef.current, threshold: thresholds }
+      )
+
+      obs.observe(el)
+      observers.push(obs)
+    })
+
+    return () => observers.forEach((o) => o.disconnect())
+  }, [numPages])
+
+  // ── Screen-capture detection ───────────────────────────────────────────────
   useEffect(() => {
     const original = navigator.mediaDevices?.getDisplayMedia?.bind(navigator.mediaDevices)
     if (!original) return
@@ -56,7 +90,6 @@ export default function SecurePDFViewer({ viewToken, serverFileName }: Props) {
       setIsCapturing(true)
       try {
         const stream = await original(opts)
-        // Stop capturing flag when all tracks end
         stream.getTracks().forEach((t) =>
           t.addEventListener('ended', () => setIsCapturing(false))
         )
@@ -67,9 +100,7 @@ export default function SecurePDFViewer({ viewToken, serverFileName }: Props) {
       }
     }
 
-    return () => {
-      navigator.mediaDevices.getDisplayMedia = original
-    }
+    return () => { navigator.mediaDevices.getDisplayMedia = original }
   }, [])
 
   // ── Keyboard & context-menu security ──────────────────────────────────────
@@ -84,20 +115,36 @@ export default function SecurePDFViewer({ viewToken, serverFileName }: Props) {
     const blockCtx  = (e: MouseEvent) => e.preventDefault()
     const blockDrag = (e: DragEvent)  => e.preventDefault()
 
-    document.addEventListener('keydown',    handleKeyDown, true)
+    document.addEventListener('keydown',     handleKeyDown, true)
     document.addEventListener('contextmenu', blockCtx)
     document.addEventListener('dragstart',   blockDrag)
     return () => {
-      document.removeEventListener('keydown',    handleKeyDown, true)
+      document.removeEventListener('keydown',     handleKeyDown, true)
       document.removeEventListener('contextmenu', blockCtx)
       document.removeEventListener('dragstart',   blockDrag)
     }
   }, [])
 
-  const goToPrev = useCallback(() => setPageNumber((p) => Math.max(1, p - 1)), [])
-  const goToNext = useCallback(() => setPageNumber((p) => Math.min(numPages, p + 1)), [numPages])
-  const zoomIn   = useCallback(() => setScale((s) => Math.min(3,   +(s + 0.2).toFixed(1))), [])
-  const zoomOut  = useCallback(() => setScale((s) => Math.max(0.5, +(s - 0.2).toFixed(1))), [])
+  // Scroll to a page (smooth)
+  const scrollToPage = useCallback((page: number) => {
+    const el = pageRefs.current[page - 1]
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }, [])
+
+  const goToPrev = useCallback(() => {
+    const next = Math.max(1, pageNumber - 1)
+    setPageNumber(next)
+    scrollToPage(next)
+  }, [pageNumber, scrollToPage])
+
+  const goToNext = useCallback(() => {
+    const next = Math.min(numPages, pageNumber + 1)
+    setPageNumber(next)
+    scrollToPage(next)
+  }, [numPages, pageNumber, scrollToPage])
+
+  const zoomIn  = useCallback(() => setScale((s) => Math.min(3,   +(s + 0.2).toFixed(1))), [])
+  const zoomOut = useCallback(() => setScale((s) => Math.max(0.5, +(s - 0.2).toFixed(1))), [])
 
   // ── Non-ready states ───────────────────────────────────────────────────────
   if (status === 'loading') return (
@@ -144,7 +191,6 @@ export default function SecurePDFViewer({ viewToken, serverFileName }: Props) {
       onContextMenu={(e) => e.preventDefault()}
       style={{ WebkitUserSelect: 'none', userSelect: 'none' }}
     >
-      {/* Screen-recording banner */}
       {isCapturing && (
         <div className="fixed inset-x-0 top-0 z-50 bg-red-600 text-white text-center text-sm font-semibold py-2 tracking-wide">
           ⚠️ Screen recording detected — document protected
@@ -176,25 +222,39 @@ export default function SecurePDFViewer({ viewToken, serverFileName }: Props) {
         </div>
       </header>
 
-      <main className="flex-1 overflow-auto flex justify-center py-8 px-4">
-        <div className="relative" style={{ filter: isCapturing ? 'blur(20px) brightness(0.2)' : 'none' }}>
-          <Document
-            file={pdfUrl!}
-            onLoadSuccess={({ numPages: n }) => setNumPages(n)}
-            loading={null}
-            error={<p className="text-gray-500 text-sm mt-8">Failed to render document.</p>}
-          >
-            <div className="relative shadow-2xl shadow-black/60">
-              <Page
-                pageNumber={pageNumber}
-                scale={scale}
-                renderTextLayer={false}
-                renderAnnotationLayer={false}
-              />
-
-            </div>
-          </Document>
-        </div>
+      {/* Scrollable page area */}
+      <main
+        ref={scrollRef}
+        className="flex-1 overflow-auto py-8 px-4"
+        style={{ filter: isCapturing ? 'blur(20px) brightness(0.2)' : 'none' }}
+      >
+        <Document
+          file={pdfUrl!}
+          onLoadSuccess={({ numPages: n }) => {
+            pageRefs.current = new Array(n).fill(null)
+            visibilityRef.current = new Array(n).fill(0)
+            setNumPages(n)
+          }}
+          loading={null}
+          error={<p className="text-gray-500 text-sm mt-8 text-center">Failed to render document.</p>}
+        >
+          <div className="flex flex-col items-center gap-6">
+            {Array.from({ length: numPages }, (_, i) => (
+              <div
+                key={i}
+                ref={(el) => { pageRefs.current[i] = el }}
+                className="shadow-2xl shadow-black/60"
+              >
+                <Page
+                  pageNumber={i + 1}
+                  scale={scale}
+                  renderTextLayer={false}
+                  renderAnnotationLayer={false}
+                />
+              </div>
+            ))}
+          </div>
+        </Document>
       </main>
 
       <footer className="bg-gray-900 border-t border-gray-800 py-2 px-4 text-center text-xs text-gray-600">
