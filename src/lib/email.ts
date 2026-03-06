@@ -80,3 +80,62 @@ export async function sendWelcomeEmail({
     html,
   })
 }
+
+export async function sendNotesUploadedEmail({ to }: { to: string }) {
+  const portalUrl = process.env.NEXTAUTH_URL ?? 'https://freenotes.092.realtorspotlighthub.homes'
+
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Notes Uploaded</title></head>
+<body style="margin:0;padding:0;background-color:#030712;font-family:Arial,Helvetica,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#030712;padding:40px 16px;">
+    <tr>
+      <td align="center">
+        <table width="100%" style="max-width:560px;">
+          <tr>
+            <td style="background-color:#111827;border:1px solid #1f2937;border-radius:16px;padding:40px 36px;">
+
+              <p style="margin:0 0 24px 0;font-size:22px;font-weight:700;color:#ffffff;line-height:1.3;">RES Notes Now Available</p>
+
+              <p style="margin:0 0 20px 0;font-size:15px;color:#d1d5db;line-height:1.7;">Dear Candidates,</p>
+
+              <p style="margin:0 0 20px 0;font-size:15px;color:#d1d5db;line-height:1.7;">Thank you for your time and dedication. We are pleased to inform you that the latest RES notes (100+ pages) have been uploaded and are now available for your review.</p>
+
+              <p style="margin:0 0 20px 0;font-size:15px;color:#d1d5db;line-height:1.7;">You may log in using your registered credentials, with your mobile number as the password.</p>
+
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;">
+                <tr>
+                  <td align="center">
+                    <a href="${portalUrl}/dashboard"
+                       style="display:inline-block;background-color:#2563eb;color:#ffffff;font-size:15px;font-weight:600;text-decoration:none;padding:13px 32px;border-radius:8px;letter-spacing:0.01em;">
+                      Log In to Portal &rarr;
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <div style="border-top:1px solid #1f2937;margin-bottom:24px;"></div>
+
+              <p style="margin:0 0 16px 0;font-size:15px;color:#d1d5db;line-height:1.7;">We appreciate your commitment to attending the sharing session, and we hope the materials will assist you in your exam preparation.</p>
+
+              <p style="margin:0 0 16px 0;font-size:15px;color:#d1d5db;line-height:1.7;">Thank you once again for your time, and we sincerely hope that PropNex will be one of the main agencies you consider for your career.</p>
+
+              <p style="margin:0 0 24px 0;font-size:15px;color:#d1d5db;line-height:1.7;">Wishing you the best of luck on your upcoming exams!</p>
+
+              <p style="margin:0;font-size:15px;color:#9ca3af;line-height:1.7;">Warm regards,<br><span style="color:#ffffff;font-weight:600;">Marketing Team</span></p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`
+
+  await transporter.sendMail({
+    from: process.env.EMAIL_FROM ?? 'rescommunity@realtorspotlighthub.homes',
+    to,
+    subject: 'RES Notes Available — Login to Review',
+    html,
+  })
+}

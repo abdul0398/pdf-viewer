@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '../../../../../../auth'
 import { prisma } from '@/lib/prisma'
+import { sendNotesUploadedEmail } from '@/lib/email'
 
 export async function PATCH(
   req: NextRequest,
@@ -13,7 +14,7 @@ export async function PATCH(
 
   const { id } = await params
   const body = await req.json()
-  const { color } = body
+  const { color, informUser } = body
 
   if (color !== null && color !== 'white' && color !== 'green') {
     return NextResponse.json({ error: 'Color must be white, green, or null' }, { status: 400 })
@@ -22,10 +23,14 @@ export async function PATCH(
   const user = await prisma.user.update({
     where: { id },
     data: { color: color ?? null },
-    select: { id: true, color: true },
+    select: { id: true, color: true, email: true },
   })
 
-  return NextResponse.json(user)
+  if (informUser) {
+    sendNotesUploadedEmail({ to: user.email }).catch(() => {})
+  }
+
+  return NextResponse.json({ id: user.id, color: user.color })
 }
 
 export async function DELETE(
