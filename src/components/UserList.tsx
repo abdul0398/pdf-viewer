@@ -49,7 +49,8 @@ export default function UserList({ initialUsers }: { initialUsers: UserRecord[] 
 
   return (
     <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
-      <table className="w-full text-sm">
+      <div className="overflow-x-auto">
+      <table className="min-w-[900px] w-full text-sm">
         <thead>
           <tr className="border-b border-gray-800">
             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
@@ -121,6 +122,7 @@ export default function UserList({ initialUsers }: { initialUsers: UserRecord[] 
           ))}
         </tbody>
       </table>
+      </div>
     </div>
   )
 }

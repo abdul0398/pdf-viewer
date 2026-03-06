@@ -24,7 +24,7 @@ export default async function AdminUsersPage() {
   return (
     <main className="min-h-screen bg-gray-950 text-white">
       <header className="border-b border-gray-800">
-        <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <a href="/dashboard" className="text-sm text-gray-400 hover:text-white transition-colors">
             ← Dashboard
           </a>
@@ -32,7 +32,7 @@ export default async function AdminUsersPage() {
         </div>
       </header>
 
-      <div className="max-w-4xl mx-auto px-6 py-12 space-y-12">
+      <div className="max-w-7xl mx-auto px-6 py-12 space-y-12">
         <div>
           <h1 className="text-2xl font-bold text-white mb-1">Manage Users</h1>
           <p className="text-gray-400 text-sm">Create and view users who can upload PDFs.</p>
