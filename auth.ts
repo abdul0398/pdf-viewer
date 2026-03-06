@@ -3,7 +3,7 @@ import Credentials from 'next-auth/providers/credentials'
 import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
 import { authConfig } from './auth.config'
-import { DevicePendingError, DeviceRejectedError } from '@/lib/auth-errors'
+import { DevicePendingError, DeviceRejectedError, UserInactiveError } from '@/lib/auth-errors'
 import { parseDeviceName } from '@/lib/device-name'
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
@@ -43,10 +43,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         // Users with no mobile are treated as already verified.
         const dbUser = await prisma.user.findUnique({
           where: { id: token.id as string },
-          select: { mobileVerified: true, mobile: true, color: true },
+          select: { mobileVerified: true, mobile: true, color: true, active: true },
         })
-        token.mobileVerified = !dbUser?.mobile || dbUser.mobileVerified
-        token.color = dbUser?.color ?? null
+        if (!dbUser?.active) return null
+        token.mobileVerified = !dbUser.mobile || dbUser.mobileVerified
+        token.color = dbUser.color ?? null
       }
 
       return token
@@ -81,6 +82,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         console.log('[auth] user found:', user?.email ?? 'null')
 
         if (!user) return null
+
+        if (!user.active) throw new UserInactiveError()
 
         const valid = await bcrypt.compare(
           credentials.password as string,

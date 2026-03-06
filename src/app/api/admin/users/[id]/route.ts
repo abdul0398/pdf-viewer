@@ -14,7 +14,17 @@ export async function PATCH(
 
   const { id } = await params
   const body = await req.json()
-  const { color, informUser } = body
+  const { color, informUser, active } = body
+
+  // Toggle active status
+  if (typeof active === 'boolean') {
+    const user = await prisma.user.update({
+      where: { id },
+      data: { active },
+      select: { id: true, active: true },
+    })
+    return NextResponse.json(user)
+  }
 
   if (color !== null && color !== 'white' && color !== 'green') {
     return NextResponse.json({ error: 'Color must be white, green, or null' }, { status: 400 })

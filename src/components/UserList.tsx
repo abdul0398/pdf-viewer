@@ -10,6 +10,7 @@ interface UserRecord {
   mobile: string | null
   color: string | null
   agentName: string | null
+  active: boolean
   devices: number
   createdAt: string
 }
@@ -36,6 +37,7 @@ function ColorBadge({ color }: { color: string | null }) {
 export default function UserList({ initialUsers }: { initialUsers: UserRecord[] }) {
   const [users, setUsers] = useState<UserRecord[]>(initialUsers)
   const [deleting, setDeleting] = useState<Record<string, boolean>>({})
+  const [togglingActive, setTogglingActive] = useState<Record<string, boolean>>({})
 
   // Edit color modal
   const [editModal, setEditModal] = useState<EditModal | null>(null)
@@ -73,6 +75,19 @@ export default function UserList({ initialUsers }: { initialUsers: UserRecord[] 
     setSaving(false)
   }
 
+  async function handleToggleActive(id: string, currentActive: boolean) {
+    setTogglingActive((prev) => ({ ...prev, [id]: true }))
+    const res = await fetch(`/api/admin/users/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ active: !currentActive }),
+    })
+    if (res.ok) {
+      setUsers((prev) => prev.map((u) => (u.id === id ? { ...u, active: !currentActive } : u)))
+    }
+    setTogglingActive((prev) => ({ ...prev, [id]: false }))
+  }
+
   async function handleDelete(id: string) {
     if (!confirm('Delete this user? This cannot be undone.')) return
     setDeleting((prev) => ({ ...prev, [id]: true }))
@@ -99,6 +114,7 @@ export default function UserList({ initialUsers }: { initialUsers: UserRecord[] 
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Agent Name</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Color</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Devices</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
                 <th className="px-4 py-3" />
@@ -125,6 +141,14 @@ export default function UserList({ initialUsers }: { initialUsers: UserRecord[] 
                     </span>
                   </td>
                   <td className="px-4 py-3">
+                    <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium ${
+                      user.active ? 'bg-green-500/15 text-green-400' : 'bg-red-500/15 text-red-400'
+                    }`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${user.active ? 'bg-green-400' : 'bg-red-400'}`} />
+                      {user.active ? 'Active' : 'Inactive'}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">
                     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
                       user.role === 'ADMIN'
                         ? 'bg-purple-500/20 text-purple-400'
@@ -147,6 +171,18 @@ export default function UserList({ initialUsers }: { initialUsers: UserRecord[] 
                           <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
                             <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
                           </svg>
+                        </button>
+                        <button
+                          onClick={() => handleToggleActive(user.id, user.active)}
+                          disabled={togglingActive[user.id]}
+                          title={user.active ? 'Deactivate user' : 'Activate user'}
+                          className={`text-xs px-2.5 py-1 rounded-md disabled:opacity-50 transition-colors ${
+                            user.active
+                              ? 'bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30'
+                              : 'bg-green-500/20 text-green-400 hover:bg-green-500/30'
+                          }`}
+                        >
+                          {togglingActive[user.id] ? '…' : user.active ? 'Deactivate' : 'Activate'}
                         </button>
                         <button
                           onClick={() => handleDelete(user.id)}

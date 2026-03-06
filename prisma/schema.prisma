@@ -16,6 +16,7 @@ model User {
   mobile          String?
   color           String?
   agentName       String?
+  active          Boolean         @default(true)
   mobileVerified  Boolean         @default(false)
   createdAt       DateTime        @default(now())
   uploads        PdfUpload[]

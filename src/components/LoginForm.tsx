@@ -47,6 +47,8 @@ export default function LoginForm() {
           setError('Your device is awaiting admin approval.')
         } else if (code === 'device_rejected') {
           setError('opps! more than 2 device is logged in!')
+        } else if (code === 'user_inactive') {
+          setError('Oops! Your access has expired. For the latest copy, please reach out to the leaders you\'ve been in contact with.')
         } else {
           setError('Invalid email or password.')
         }

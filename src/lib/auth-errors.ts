@@ -7,3 +7,7 @@ export class DevicePendingError extends CredentialsSignin {
 export class DeviceRejectedError extends CredentialsSignin {
   code = 'device_rejected'
 }
+
+export class UserInactiveError extends CredentialsSignin {
+  code = 'user_inactive'
+}
