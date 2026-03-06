@@ -1,8 +1,10 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 
 export default function CreateUserForm() {
+  const router = useRouter()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -49,6 +51,7 @@ export default function CreateUserForm() {
       setColor('white')
       setAgentName('')
       setSendEmail(false)
+      router.refresh()
     } catch {
       setError('Something went wrong. Please try again.')
     } finally {
