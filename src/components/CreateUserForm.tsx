@@ -8,7 +8,9 @@ export default function CreateUserForm() {
   const [password, setPassword] = useState('')
   const [mobile, setMobile] = useState('')
   const [mobileError, setMobileError] = useState<string | null>(null)
-  const [color, setColor] = useState('')
+  const [color, setColor] = useState<'white' | 'green'>('white')
+  const [agentName, setAgentName] = useState('')
+  const [sendEmail, setSendEmail] = useState(false)
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -30,7 +32,7 @@ export default function CreateUserForm() {
       const res = await fetch('/api/admin/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password, mobile: mobile || undefined, color: color || undefined }),
+        body: JSON.stringify({ name, email, password, mobile: mobile || undefined, color, agentName: agentName || undefined, sendEmail }),
       })
 
       const data = await res.json()
@@ -44,7 +46,9 @@ export default function CreateUserForm() {
       setEmail('')
       setPassword('')
       setMobile('')
-      setColor('')
+      setColor('white')
+      setAgentName('')
+      setSendEmail(false)
     } catch {
       setError('Something went wrong. Please try again.')
     } finally {
@@ -133,28 +137,82 @@ export default function CreateUserForm() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
+            <label htmlFor="user-agent-name" className="block text-sm font-medium text-gray-300 mb-1.5">
+              Agent Name <span className="text-gray-500 font-normal">(optional)</span>
+            </label>
+            <input
+              id="user-agent-name"
+              type="text"
+              value={agentName}
+              onChange={(e) => setAgentName(e.target.value)}
+              className="w-full bg-gray-800 border border-gray-700 text-white rounded-lg px-4 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+              placeholder="Agent name"
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
             <label className="block text-sm font-medium text-gray-300 mb-1.5">
-              Color <span className="text-gray-500 font-normal">(optional)</span>
+              Color
             </label>
             <div className="flex gap-2">
-              {(['', 'blue', 'green'] as const).map((c) => (
+              {(['white', 'green'] as const).map((c) => (
                 <button
-                  key={c || 'none'}
+                  key={c}
                   type="button"
                   onClick={() => setColor(c)}
                   className={`px-4 py-2.5 rounded-lg text-sm font-medium border transition-colors ${
                     color === c
-                      ? c === 'blue'
-                        ? 'bg-blue-600 border-blue-500 text-white'
-                        : c === 'green'
-                        ? 'bg-green-600 border-green-500 text-white'
-                        : 'bg-gray-700 border-gray-600 text-white'
+                      ? c === 'white'
+                        ? 'bg-white border-gray-300 text-gray-900'
+                        : 'bg-green-600 border-green-500 text-white'
                       : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-500'
                   }`}
                 >
-                  {c || 'None'}
+                  {c.charAt(0).toUpperCase() + c.slice(1)}
                 </button>
               ))}
+            </div>
+            <div className="mt-2 space-y-1">
+              <p className="flex items-center gap-1.5 text-xs text-gray-500">
+                <span className="inline-block w-2.5 h-2.5 rounded-full bg-green-500 shrink-0" />
+                Green — Notes &amp; Exam Papers
+              </p>
+              <p className="flex items-center gap-1.5 text-xs text-gray-500">
+                <span className="inline-block w-2.5 h-2.5 rounded-full bg-white shrink-0" />
+                White — Exam Papers Only
+              </p>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1.5">
+              Would you like to send an email?
+            </label>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setSendEmail(true)}
+                className={`px-4 py-2.5 rounded-lg text-sm font-medium border transition-colors ${
+                  sendEmail
+                    ? 'bg-green-600 border-green-500 text-white'
+                    : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-500'
+                }`}
+              >
+                Yes
+              </button>
+              <button
+                type="button"
+                onClick={() => setSendEmail(false)}
+                className={`px-4 py-2.5 rounded-lg text-sm font-medium border transition-colors ${
+                  !sendEmail
+                    ? 'bg-gray-700 border-gray-600 text-white'
+                    : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-500'
+                }`}
+              >
+                No
+              </button>
             </div>
           </div>
         </div>

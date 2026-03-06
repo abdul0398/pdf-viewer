@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json()
-  const { email, name, password, mobile, color } = body
+  const { email, name, password, mobile, color, agentName, sendEmail } = body
 
   if (!email || !name || !password) {
     return NextResponse.json(
@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
   const passwordHash = await bcrypt.hash(password, 12)
 
   const user = await prisma.user.create({
-    data: { email, name, passwordHash, role: 'USER', mobile: mobile || null, color: color || null },
+    data: { email, name, passwordHash, role: 'USER', mobile: mobile || null, color: color || null, agentName: agentName || null },
     select: { id: true, email: true, name: true, role: true, createdAt: true },
   })
 
@@ -51,8 +51,10 @@ export async function POST(request: NextRequest) {
     })
   }
 
-  // Send welcome email (non-blocking — failure won't break user creation)
-  sendWelcomeEmail({ to: email, name, password }).catch(() => {})
+  // Send welcome email only if admin opted in (non-blocking)
+  if (sendEmail) {
+    sendWelcomeEmail({ to: email, name, password }).catch(() => {})
+  }
 
   return NextResponse.json(user, { status: 201 })
 }

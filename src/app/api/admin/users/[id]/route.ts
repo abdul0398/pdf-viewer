@@ -15,8 +15,8 @@ export async function PATCH(
   const body = await req.json()
   const { color } = body
 
-  if (color !== null && color !== 'blue' && color !== 'green') {
-    return NextResponse.json({ error: 'Color must be blue, green, or null' }, { status: 400 })
+  if (color !== null && color !== 'white' && color !== 'green') {
+    return NextResponse.json({ error: 'Color must be white, green, or null' }, { status: 400 })
   }
 
   const user = await prisma.user.update({

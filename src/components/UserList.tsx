@@ -68,7 +68,7 @@ export default function UserList({ initialUsers }: { initialUsers: UserRecord[] 
               <td className="px-4 py-3 text-gray-300">{user.mobile ? `+65 ${user.mobile}` : <span className="text-gray-600">—</span>}</td>
               <td className="px-4 py-3">
                 <div className={`flex gap-1 ${updatingColor[user.id] ? 'opacity-50 pointer-events-none' : ''}`}>
-                  {(['blue', 'green', null] as const).map((c) => (
+                  {(['white', 'green', null] as const).map((c) => (
                     <button
                       key={c ?? 'none'}
                       type="button"
@@ -76,13 +76,13 @@ export default function UserList({ initialUsers }: { initialUsers: UserRecord[] 
                       title={c ?? 'None'}
                       className={`w-6 h-6 rounded-full border-2 transition-all ${
                         user.color === c
-                          ? c === 'blue'
-                            ? 'bg-blue-500 border-blue-300'
+                          ? c === 'white'
+                            ? 'bg-white border-gray-300'
                             : c === 'green'
                             ? 'bg-green-500 border-green-300'
                             : 'bg-gray-600 border-gray-400'
-                          : c === 'blue'
-                          ? 'bg-blue-500/30 border-blue-500/30 hover:border-blue-400'
+                          : c === 'white'
+                          ? 'bg-white/30 border-white/30 hover:border-white/60'
                           : c === 'green'
                           ? 'bg-green-500/30 border-green-500/30 hover:border-green-400'
                           : 'bg-gray-700 border-gray-600 hover:border-gray-400'
