@@ -57,11 +57,17 @@ export async function PATCH(
     select: { id: true, color: true, name: true, email: true, mobile: true },
   })
 
+  let emailError: string | null = null
   if (informUser) {
-    sendNotesUploadedEmail({ to: user.email }).catch(() => {})
+    try {
+      await sendNotesUploadedEmail({ to: user.email })
+    } catch (err) {
+      console.error('[email] Failed to send notes email:', err)
+      emailError = err instanceof Error ? err.message : 'Unknown email error'
+    }
   }
 
-  return NextResponse.json(user)
+  return NextResponse.json({ ...user, emailError })
 }
 
 export async function DELETE(

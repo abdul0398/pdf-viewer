@@ -142,7 +142,11 @@ export default function UserList({ initialUsers }: { initialUsers: UserRecord[] 
             : u
         )
       )
-      closeEdit()
+      if (data.emailError) {
+        setSaveError(`Saved, but email failed: ${data.emailError}`)
+      } else {
+        closeEdit()
+      }
     } else {
       setSaveError(data.error || 'Failed to save')
     }
