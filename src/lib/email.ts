@@ -76,7 +76,7 @@ export async function sendWelcomeEmail({
   await transporter.sendMail({
     from: process.env.EMAIL_FROM ?? 'rescommunity@realtorspotlighthub.homes',
     to,
-    subject: 'Welcome — your account is ready',
+    subject: 'Res Community Group',
     html,
   })
 }
@@ -135,7 +135,7 @@ export async function sendNotesUploadedEmail({ to }: { to: string }) {
   await transporter.sendMail({
     from: process.env.EMAIL_FROM ?? 'rescommunity@realtorspotlighthub.homes',
     to,
-    subject: 'RES Notes Available — Login to Review',
+    subject: 'Res Community Group',
     html,
   })
 }
