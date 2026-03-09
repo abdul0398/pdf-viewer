@@ -60,7 +60,7 @@ export async function PATCH(
   let emailError: string | null = null
   if (informUser) {
     try {
-      await sendNotesUploadedEmail({ to: user.email })
+      await sendNotesUploadedEmail({ to: user.email, name: user.name, email: user.email, mobile: user.mobile })
     } catch (err) {
       console.error('[email] Failed to send notes email:', err)
       emailError = err instanceof Error ? err.message : 'Unknown email error'

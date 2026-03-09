@@ -11,7 +11,7 @@ export default function CreateUserForm() {
   const [mobile, setMobile] = useState('')
   const [mobileError, setMobileError] = useState<string | null>(null)
   const [color, setColor] = useState<'white' | 'green'>('white')
-  const [agentName, setAgentName] = useState('')
+  const [agentName, setAgentName] = useState('Stewart Lim')
   const [sendEmail, setSendEmail] = useState(false)
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState<string | null>(null)
@@ -49,7 +49,7 @@ export default function CreateUserForm() {
       setPassword('')
       setMobile('')
       setColor('white')
-      setAgentName('')
+      setAgentName('Stewart Lim')
       setSendEmail(false)
       router.refresh()
     } catch {
@@ -141,16 +141,20 @@ export default function CreateUserForm() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label htmlFor="user-agent-name" className="block text-sm font-medium text-gray-300 mb-1.5">
-              Agent Name <span className="text-gray-500 font-normal">(optional)</span>
+              Agent Name
             </label>
-            <input
+            <select
               id="user-agent-name"
-              type="text"
               value={agentName}
               onChange={(e) => setAgentName(e.target.value)}
+              required
               className="w-full bg-gray-800 border border-gray-700 text-white rounded-lg px-4 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
-              placeholder="Agent name"
-            />
+            >
+              <option value="Stewart Lim">Stewart Lim</option>
+              <option value="Jasmine Lau">Jasmine Lau</option>
+              <option value="Sam Lim">Sam Lim</option>
+              <option value="Huang Han">Huang Han</option>
+            </select>
           </div>
         </div>
 
