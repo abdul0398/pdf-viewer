@@ -30,9 +30,18 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  const existing = await prisma.user.findUnique({ where: { email } })
+  const existing = await prisma.user.findFirst({
+    where: { email: { equals: email, mode: 'insensitive' } },
+  })
   if (existing) {
-    return NextResponse.json({ error: 'Email already in use' }, { status: 409 })
+    let emailError: string | null = null
+    try {
+      await sendWelcomeEmail({ to: existing.email, name: existing.name, password })
+    } catch (err) {
+      console.error('[email] Failed to resend welcome email:', err)
+      emailError = err instanceof Error ? err.message : 'Unknown email error'
+    }
+    return NextResponse.json({ emailResent: true, emailError }, { status: 200 })
   }
 
   if (mobile) {
